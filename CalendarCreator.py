@@ -6,7 +6,13 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from datetime import datetime, time, timedelta
-import re
+
+from calendar_helpers import (
+    get_calltime_from_starttime,
+    get_endtime_from_starttime,
+    create_title_description,
+    parse_date_and_time,
+)
 
 # -----------------------------------------
 # Config
@@ -51,71 +57,6 @@ def authenticate():
         with open(TOKEN_FILE, 'w') as token:
             token.write(creds.to_json())
     return creds
-
-
-def parse_date_and_time(date_str, time_str):
-    """
-    Takes the date and time cols to create start time and end time for GCal event.
-    :param date_str: Date like "Sunday, October 12, 2025"
-    :param time_str: Time like "7:00 PM", "6PM-8PM", "TBD"
-    :return: (start_datetime, end_datetime) as datetime objects
-    """
-
-    # Remove weekday if present
-    date_str = re.sub(r'^[A-Za-z]+,\s*', '', date_str)
-    date_fmt = "%B %d, %Y"
-    try:
-        date_obj = datetime.strptime(date_str, date_fmt)
-    except ValueError:
-        return None, None
-
-    # Handle TBD for time
-    if not time_str or time_str.strip().upper() == 'TBD':
-        start_datetime = date_obj.replace(hour=0, minute=0)
-        end_datetime = start_datetime + timedelta(hours=1)
-        return start_datetime, end_datetime
-
-    # Inner function to parse time
-    def parse_time(t):
-        t = t.strip().replace(' ', '')
-        # Add space before AM/PM if missing
-        t = re.sub(r'(\d)(AM|PM|am|pm)', r'\1 \2', t)
-        try:
-            return datetime.strptime(t, "%I:%M %p").time()
-        except ValueError:
-            try:
-                return datetime.strptime(t, "%I %p").time()
-            except ValueError:
-                return None
-
-def get_calltime_from_starttime(start_time, game_type):
-    """Given a start time and game type, return an appropriate call time."""
-    if game_type.lower() == 'vball':
-        return (datetime.combine(datetime.today(), start_time) - timedelta(minutes=20)).time()
-    if game_type.lower() == 'hoc':
-        return (datetime.combine(datetime.today(), start_time) - timedelta(minutes=20)).time()
-    if game_type.lower() == 'mbb':
-        return (datetime.combine(datetime.today(), start_time) - timedelta(minutes=45)).time()
-    if game_type.lower() == 'wbb':
-        return (datetime.combine(datetime.today(), start_time) - timedelta(minutes=30)).time()
-    return (datetime.combine(datetime.today(), start_time) - timedelta(minutes=00)).time()  # base case, hopefully for rehearsals
-
-def get_endtime_from_starttime(start_time, game_type):
-    """Given a start time and game type, return an appropriate end time."""
-    if game_type.lower() == 'vball':
-        return (datetime.combine(datetime.today(), start_time) + timedelta(hours=2, minutes=00)).time()
-    if game_type.lower() == 'mbb' or game_type.lower() == 'wbb':
-        return (datetime.combine(datetime.today(), start_time) + timedelta(hours=2, minutes=30)).time()
-    if game_type.lower() == 'hoc':
-        return (datetime.combine(datetime.today(), start_time) + timedelta(hours=2, minutes=30)).time()
-    print(f'Mismatch with game type; get_endtime; {game_type=}')
-    return (datetime.combine(datetime.today(), start_time) + timedelta(hours=2)).time()
-
-def create_title_description(sport, opponent, band, conductor, calltime, starttime):
-    title = f"Spartan Brass - {band}: {sport} vs {opponent} at {starttime}"
-    description = f"Call Time: {calltime}\nStart Time: {starttime}\nConductor: {conductor}"
-
-    return (title, description)
 
 
 def get_sheet_data(service, spreadsheet_id, range_name):
