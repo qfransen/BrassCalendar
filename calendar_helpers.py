@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import re
 
 def parse_date_and_time(date_str, time_str):
@@ -69,12 +69,16 @@ def get_calltime_from_starttime(start_time, game_type):
     return (datetime.combine(datetime.today(), start_time) - timedelta(minutes=0)).time()
 
 def get_endtime_from_starttime(start_time, game_type):
+    # print('get_endtime', start_time, type(start_time))
+    # print(start_time == time(17, 10), game_type.lower() == 'brass rehearsal', game_type)
     """Given a start time and game type, return an appropriate end time."""
     gt = game_type.lower()
     if gt == 'vball':
         return (datetime.combine(datetime.today(), start_time) + timedelta(hours=2)).time()
     if gt == 'mbb' or gt == 'wbb' or gt == 'hoc':
         return (datetime.combine(datetime.today(), start_time) + timedelta(hours=2, minutes=30)).time()
+    if gt == 'rehearsal' and start_time == time(17, 10):  # 50 minute rehearsals in spring
+        return (datetime.combine(datetime.today(), start_time) + timedelta(hours=0, minutes=50)).time()
     # fallback
     return (datetime.combine(datetime.today(), start_time) + timedelta(hours=2)).time()
 

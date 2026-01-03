@@ -5,6 +5,7 @@ Creates a CSV file that can be imported into google calendar.
 # TODO: update README
 
 import csv
+from datetime import datetime
 
 from calendar_helpers import (
     get_calltime_from_starttime,
@@ -41,9 +42,15 @@ def create_csv_row(event):
     conductor = event.get('conductor', '')
     location = event.get('venue', 'TBD')
 
-    print(f"date_and_time {parse_date_and_time(date_str, time_str)}")
-    start_dt, end_dt = parse_date_and_time(date_str, time_str)
-    if not start_dt or not end_dt:
+    # print(f"date_and_time {parse_date_and_time(date_str, time_str)}")
+    datetime = parse_date_and_time(date_str, time_str)
+    if not datetime:
+        print(f'Unable to create CSV row for event on {date_str} at {time_str}')
+        return None  # Invalid date/time
+
+    # extract after determining we got a correct value
+    start_dt, end_dt = datetime
+    if start_dt is None or end_dt is None:
         print(f'Unable to create CSV row for event on {date_str} at {time_str}')
         return None  # Invalid date/time
 
@@ -95,30 +102,45 @@ def write_events_to_csv(events, csv_filename):
 #########################
 
 def main():
-    print("Creating CSV for Spartan Brass events...")
-    # Example events
-    events = [
-        {
-            'date': 'Monday, January 5, 2026',
-            'time': '7:00 PM',
-            'sport': 'mbb',
-            'opponent': 'Rival University',
-            'band': 'White',
-            'conductor': 'John Doe',
-            'venue': 'Home Stadium'
-        },
-        {
-            'date': 'Tuesday, January 6, 2026',
-            'time': 'TBD',
-            'sport': 'vball',
-            'opponent': 'City College',
-            'band': 'BRASS',
-            'conductor': 'Jane Smith',
-            'venue': 'Away Arena'
-        }
-    ]
+    start_load_date = datetime(year=2026, month=1, day=10) # only load in events for this semester
+    print(start_load_date)
 
-    write_events_to_csv(events, 'spartan_brass_events_test.csv')
+    # Load in the brass calendar CSV
+    file_name = '25-26 Brass Schedule - White Band.csv'
+    print(f"Loading Brass Calendar from {file_name} starting at {start_load_date}...")
+
+    with open(file_name, newline='', encoding='utf-8') as fh:
+        reader = csv.DictReader(fh)
+        print("headers:", reader.fieldnames)
+
+        events = []
+
+        for row in reader:
+            event = {}
+            event['date'] = row.get('Date', '')
+            event['time'] = row.get('Time', '')
+            event['sport'] = row.get('Sport', '')
+            event['opponent'] = row.get('Event', '')
+            event['band'] = row.get('Band', '')
+            event['conductor'] = row.get('Conductor', '')
+            event['venue'] = row.get('Venue', '')
+
+            # Only include events on or after start_load_date
+            date_str = event['date']
+            time_str = event['time']
+            dt = parse_date_and_time(date_str, time_str)
+            if not dt:
+                print(f'Unable to parse date/time for event on {date_str} at {time_str}')
+                continue
+            date, _ = dt
+            if not date:
+                print(f'Unable to parse date for event on {date_str}')
+                continue
+            if date >= start_load_date:
+                events.append(event)
+
+    print(f"Loaded {len(events)} events from Brass Calendar.")
+    write_events_to_csv(events, 'white_brass_events.csv')
 
 
 if __name__ == "__main__":
