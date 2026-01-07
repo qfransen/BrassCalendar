@@ -83,7 +83,16 @@ def get_endtime_from_starttime(start_time, game_type):
     return (datetime.combine(datetime.today(), start_time) + timedelta(hours=2)).time()
 
 def create_title_description(sport, opponent, band, conductor, calltime, starttime):
-    title = f"Spartan Brass - {band}: {sport} vs {opponent} at {starttime}"
+    # Convert from military time to standard time strings
+    calltime = calltime.strftime("%I:%M %p").lstrip('0')
+    starttime = starttime.strftime("%I:%M %p").lstrip('0')
+
+    # No vs for rehearsals
+    if sport.lower() == 'rehearsal':
+        title = f"Brass - {band}: {sport} @ {starttime}"
+    else:
+        title = f"Brass - {band}: {sport} vs {opponent} @ {starttime}"
+
     description = f"Call Time: {calltime}\nStart Time: {starttime}\nConductor: {conductor}"
     return (title, description)
 

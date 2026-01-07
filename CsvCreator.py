@@ -140,7 +140,7 @@ def main():
                 events.append(event)
 
     print(f"Loaded {len(events)} events from Brass Calendar.")
-    write_events_to_csv(events, 'white_brass_events.csv')
+    write_events_to_csv(events, 'white_brass_events-test-1-7-26.csv')
 
 
 if __name__ == "__main__":
