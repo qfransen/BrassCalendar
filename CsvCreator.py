@@ -42,7 +42,6 @@ def create_csv_row(event):
     conductor = event.get('conductor', '')
     location = event.get('venue', 'TBD')
 
-    # print(f"date_and_time {parse_date_and_time(date_str, time_str)}")
     datetime = parse_date_and_time(date_str, time_str)
     if not datetime:
         print(f'Unable to create CSV row for event on {date_str} at {time_str}')
@@ -54,30 +53,38 @@ def create_csv_row(event):
         print(f'Unable to create CSV row for event on {date_str} at {time_str}')
         return None  # Invalid date/time
 
-    call_time = get_calltime_from_starttime(start_dt.time(), sport)
-    end_time = get_endtime_from_starttime(start_dt.time(), sport)
-
-    title, description = create_title_description(
-        sport, opponent, band, conductor, call_time, start_dt.time()
-    )
+    is_tbd = not time_str or time_str.strip().upper() == 'TBD'
+    if is_tbd:
+        if sport.lower() == 'rehearsal':
+            title = f"Brass - {band}: {sport} @ TBD"
+        else:
+            title = f"Brass - {band}: {sport} vs {opponent} @ TBD"
+        description = f"Call Time: TBD\nStart Time: TBD\nConductor: {conductor}"
+        start_time_str = ""
+        end_time_str = ""
+        all_day_event = "True"
+    else:
+        call_time = get_calltime_from_starttime(start_dt.time(), sport)
+        end_time = get_endtime_from_starttime(start_dt.time(), sport)
+        title, description = create_title_description(
+            sport, opponent, band, conductor, call_time, start_dt.time()
+        )
+        # Ensure 12-hour format with AM/PM (e.g. 6:00 PM, 11:15 AM)
+        start_time_str = call_time.strftime("%I:%M %p").lstrip('0')
+        end_time_str = end_time.strftime("%I:%M %p").lstrip('0')
+        all_day_event = "False"
 
     csv_row = {
         "Subject": title,
         "Start Date": start_dt.strftime("%m/%d/%Y"),
-        "Start Time": call_time.strftime("%I:%M %p"),
+        "Start Time": start_time_str,
         "End Date": end_dt.strftime("%m/%d/%Y"),
-        "End Time": end_time.strftime("%I:%M %p"),
-        "All Day Event": "False",
+        "End Time": end_time_str,
+        "All Day Event": all_day_event,
         "Description": description,
         "Location": location,
         "Private": "True",
     }
-
-    # Temporarily handle 'TBD' time as all-day event
-    if time_str == 'TBD':
-        csv_row["Start Time"] = ""
-        csv_row["End Time"] = ""
-        csv_row["All Day Event"] = "True"
 
     return csv_row
 
@@ -102,11 +109,11 @@ def write_events_to_csv(events, csv_filename):
 #########################
 
 def main():
-    start_load_date = datetime(year=2026, month=1, day=10) # only load in events for this semester
+    start_load_date = datetime(year=2026, month=10, day=26)
     print(start_load_date)
 
     # Load in the brass calendar CSV
-    file_name = '25-26 Brass Schedule - White Band.csv'
+    file_name = '26-27 Brass Schedule - Green Band.csv'
     print(f"Loading Brass Calendar from {file_name} starting at {start_load_date}...")
 
     with open(file_name, newline='', encoding='utf-8') as fh:
@@ -140,7 +147,9 @@ def main():
                 events.append(event)
 
     print(f"Loaded {len(events)} events from Brass Calendar.")
-    write_events_to_csv(events, 'white_brass_events-test-1-7-26.csv')
+    out_filename = 'green_events_10-26-2026.csv'
+    print(f"Writing events to {out_filename}...")
+    write_events_to_csv(events, out_filename)
 
 
 if __name__ == "__main__":

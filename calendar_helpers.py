@@ -45,6 +45,9 @@ def parse_date_and_time(date_str, time_str):
         if not start_time or not end_time:
             print('Error parsing time range:', time_str)
             return None, None
+        start_datetime = datetime.combine(date_obj, start_time)
+        end_datetime = datetime.combine(date_obj, end_time)
+        return start_datetime, end_datetime
     else:
         # Just a start time - default duration of 0.5 hours
         start_time = parse_time(time_str)
